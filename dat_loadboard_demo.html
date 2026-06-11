@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DAT Load Board</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; font-size: 13px; background: #f0f2f5; color: #222; }
+
+.header { background: #003087; color: #fff; padding: 0 16px; display: flex; align-items: center; gap: 14px; height: 48px; }
+.logo { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+.logo span { color: #f90; }
+.badge { background: #f90; color: #003087; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 3px; }
+.header nav { margin-left: auto; display: flex; gap: 18px; font-size: 12px; }
+.header nav a { color: rgba(255,255,255,.85); text-decoration: none; }
+.header nav a:hover { color: #fff; }
+
+.search-bar { background: #003087; padding: 10px 16px 14px; }
+.search-bar h2 { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.form-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.fg { display: flex; flex-direction: column; gap: 3px; }
+.fg label { color: rgba(255,255,255,.7); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.fg input, .fg select { background: #fff; border: 1px solid #ccc; border-radius: 3px; padding: 5px 8px; font-size: 12px; color: #222; height: 30px; min-width: 110px; }
+.fg select { min-width: 90px; }
+.btn-search { background: #f90; border: none; color: #003087; font-weight: 700; font-size: 12px; padding: 0 20px; height: 30px; border-radius: 3px; cursor: pointer; }
+.btn-search:hover { background: #ffb733; }
+.btn-reset { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.4); color: #fff; font-size: 11px; padding: 0 12px; height: 30px; border-radius: 3px; cursor: pointer; }
+.btn-reload { background: #28a745; border: none; color: #fff; font-size: 12px; font-weight: 700; padding: 0 14px; height: 30px; border-radius: 3px; cursor: pointer; }
+.btn-reload:hover { background: #218838; }
+
+.status-bar { background: #e8f4fd; border-bottom: 1px solid #b8d4ee; padding: 7px 16px; font-size: 12px; color: #0c4a7a; display: flex; align-items: center; gap: 8px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #28a745; flex-shrink: 0; }
+.dot.spin { background: #f90; animation: blink 1s infinite; }
+.dot.err  { background: #dc3545; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+.toolbar { background: #fff; border-bottom: 1px solid #ddd; padding: 6px 16px; display: flex; align-items: center; gap: 10px; }
+.result-count { font-weight: 700; font-size: 13px; color: #003087; }
+.result-count span { color: #888; font-weight: 400; font-size: 12px; }
+.toolbar-right { margin-left: auto; display: flex; gap: 6px; }
+.icon-btn { background: #f4f6f8; border: 1px solid #ddd; border-radius: 3px; width: 30px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #555; }
+.icon-btn:hover { background: #e0e6f0; }
+.btn-ns { background: #003087; color: #fff; border: none; border-radius: 3px; padding: 5px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.btn-ns:hover { background: #00409e; }
+
+.layout { display: flex; }
+.main { flex: 1; min-width: 0; overflow: hidden; }
+.table-wrap { overflow-x: auto; background: #fff; }
+table { width: 100%; border-collapse: collapse; min-width: 1050px; }
+thead th {
+  background: #e8edf4; color: #003087; font-size: 11px; font-weight: 700;
+  padding: 7px 8px; text-align: left; border-bottom: 2px solid #003087;
+  white-space: nowrap; cursor: pointer; user-select: none;
+  position: sticky; top: 0; z-index: 2;
+}
+thead th:hover { background: #d4e0f0; }
+tbody tr { border-bottom: 1px solid #eee; cursor: pointer; }
+tbody tr:hover { background: #eef3fb; }
+tbody tr.sel { background: #d0e4f7 !important; }
+tbody td { padding: 5px 8px; font-size: 12px; white-space: nowrap; vertical-align: middle; }
+
+.city  { color: #003087; font-weight: 600; }
+.thi   { color: #cc0000; font-weight: 700; }
+.tmid  { color: #0066cc; font-weight: 700; }
+.tlo   { font-weight: 600; }
+.ohi   { color: #006600; font-weight: 700; }
+.cshi  { color: #006600; font-weight: 700; }
+.csmid { color: #cc6600; font-weight: 700; }
+.cslo  { color: #cc0000; font-weight: 700; }
+.eq-b  { display:inline-block; background:#003087; color:#fff; border-radius:3px; padding:1px 6px; font-size:11px; font-weight:700; }
+.fp-b  { display:inline-block; background:#e8f0fe; color:#003087; border:1px solid #b8d0ee; border-radius:3px; padding:1px 6px; font-size:11px; font-weight:600; }
+.fp-p  { background:#fff3cd; color:#664d03; border-color:#f9c74f; }
+.dh-b  { background:#f0f4ff; color:#3350aa; border:1px solid #c0ccf0; border-radius:3px; padding:1px 5px; font-size:10px; font-weight:700; }
+.mut   { color:#aaa; }
+.arr   { color:#bbb; }
+
+.side { width: 260px; min-width: 260px; background: #fff; border-left: 1px solid #ddd; padding: 14px 12px; font-size: 12px; }
+.side-empty { text-align:center; color:#bbb; margin-top:50px; line-height:1.8; }
+.side h3 { font-size:13px; color:#003087; font-weight:700; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:6px; }
+.rbox { background:#f0f6ff; border:1px solid #b8d0ee; border-radius:5px; padding:10px 12px; margin-bottom:12px; }
+.rl { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#003087; margin-bottom:3px; }
+.do { width:10px; height:10px; border-radius:50%; background:#003087; flex-shrink:0; }
+.dd { width:10px; height:10px; border-radius:50%; background:#f90; flex-shrink:0; }
+.sr { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; padding-bottom:5px; border-bottom:1px solid #f5f5f5; }
+.sl { color:#888; font-size:11px; text-transform:uppercase; letter-spacing:.4px; }
+.sv { font-weight:700; font-size:12px; text-align:right; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.stars { color:#f90; }
+.btn-cp { width:100%; background:#003087; color:#fff; border:none; border-radius:4px; padding:8px; font-size:12px; font-weight:700; cursor:pointer; margin-top:10px; }
+.btn-cp:hover { background:#00409e; }
+
+.toast { position:fixed; bottom:24px; right:24px; background:#28a745; color:#fff; padding:10px 20px; border-radius:5px; font-weight:700; font-size:13px; z-index:9999; display:none; }
+.erow td { text-align:center; padding:48px 20px; color:#888; font-size:13px; }
+
+@media(max-width:900px){ .side{display:none} }
+@media(max-width:600px){ .header nav{display:none} }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">DAT<span>.</span><span style="font-size:14px;font-weight:400;opacity:.9">LoadBoard</span></div>
+  <div class="badge">LIVE DEMO</div>
+  <nav>
+    <a href="#">Find Loads</a>
+    <a href="#">Find Trucks</a>
+    <a href="#">My Loads</a>
+    <a href="#">Analytics</a>
+  </nav>
+</div>
+
+<div class="search-bar">
+  <h2>Search Loads</h2>
+  <div class="form-row">
+    <div class="fg">
+      <label>Origin</label>
+      <input type="text" id="fO" placeholder="e.g. Fontana, CA" oninput="doFilter()">
+    </div>
+    <div class="fg">
+      <label>Destination</label>
+      <input type="text" id="fD" placeholder="Any city, ST" oninput="doFilter()">
+    </div>
+    <div class="fg">
+      <label>Truck Type</label>
+      <select id="fT" onchange="doFilter()">
+        <option value="">All Types</option>
+        <option value="V">Van (V)</option>
+        <option value="R">Reefer (R)</option>
+        <option value="F">Flatbed (F)</option>
+        <option value="SD">Step Deck</option>
+        <option value="DD">Double Drop</option>
+        <option value="RGN">RGN</option>
+        <option value="PO">Power Only</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Full / Partial</label>
+      <select id="fFP" onchange="doFilter()">
+        <option value="">Both</option>
+        <option value="full">Full</option>
+        <option value="partial">Partial</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Min Offer ($)</label>
+      <input type="number" id="fMin" placeholder="0" min="0" oninput="doFilter()" style="min-width:80px">
+    </div>
+    <button class="btn-search" onclick="doFilter()">&#128269; SEARCH</button>
+    <button class="btn-reset" onclick="resetAll()">Reset</button>
+    <button class="btn-reload" onclick="loadSheet()">&#8635; Refresh</button>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span class="dot spin" id="sd"></span>
+  <span id="sm">Connecting to Google Sheet…</span>
+</div>
+
+<div class="layout">
+  <div class="main">
+    <div class="toolbar">
+      <div class="result-count" id="rc">Loading… <span></span></div>
+      <div class="toolbar-right">
+        <div class="icon-btn" title="Refresh" onclick="loadSheet()">&#8635;</div>
+        <div class="icon-btn" title="Copy selected rows" onclick="copySelected()">&#128203;</div>
+        <button class="btn-ns" onclick="resetAll()">NEW SEARCH</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:28px"><input type="checkbox" id="ca" onchange="toggleAll(this)"></th>
+            <th onclick="srt('age')">AGE</th>
+            <th onclick="srt('pickup')">PICKUP</th>
+            <th onclick="srt('origin')">ORIGIN</th>
+            <th onclick="srt('dh')">DH MILES</th>
+            <th class="arr"></th>
+            <th onclick="srt('dest')">DESTINATION</th>
+            <th onclick="srt('trip')">TRIP</th>
+            <th onclick="srt('truck')">TRUCK</th>
+            <th>LENGTH</th>
+            <th onclick="srt('weight')">WEIGHT</th>
+            <th onclick="srt('fp')">F/P</th>
+            <th onclick="srt('offer')">OFFER</th>
+            <th onclick="srt('cs')">CS</th>
+            <th onclick="srt('dtp')">DTP</th>
+            <th onclick="srt('company')">COMPANY</th>
+            <th>CONTACT</th>
+          </tr>
+        </thead>
+        <tbody id="tb">
+          <tr class="erow"><td colspan="17">&#128337; Loading from Google Sheet…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="side" id="side">
+    <div class="side-empty">&#128203;<br><br>Click any load row<br>to see full details</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">&#10003; Copied!</div>
+
+<script>
+// ── YOUR GOOGLE SHEET CSV URL (hardcoded) ─────────────────────
+const CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTEj3R4chLE5Ol0XAAGB9miYxPhq3J9A4QjQp_lclITARbT4Msf3_lRuepTN6jv-DVIuRkt-Mam1Et/pub?output=csv";
+
+// Multiple CORS proxies — tries each one until one works
+const PROXIES = [
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://cors-anywhere.herokuapp.com/${u}`,
+  u => u   // last resort: direct (works on GitHub Pages)
+];
+
+let all = [], filtered = [], selIdx = -1, sCol = '', sAsc = true;
+
+window.onload = loadSheet;
+
+async function loadSheet() {
+  setStatus('spin', 'Fetching latest data from your Google Sheet…');
+  document.getElementById('tb').innerHTML = '<tr class="erow"><td colspan="17">&#128337; Loading…</td></tr>';
+
+  for (let i = 0; i < PROXIES.length; i++) {
+    try {
+      const url = PROXIES[i](CSV);
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (!text || text.trim().length < 5) continue;
+      all = parseCSV(text);
+      filtered = [...all];
+      renderTable();
+      const t = new Date().toLocaleTimeString();
+      setStatus('ok', `&#10003; ${all.length} load${all.length!==1?'s':''} loaded &nbsp;·&nbsp; Last refresh: ${t} &nbsp;·&nbsp; Source: Google Sheet`);
+      return;
+    } catch(e) { /* try next proxy */ }
+  }
+
+  // All proxies failed
+  setStatus('err', '&#9888; Could not reach Google Sheet. Try: 1) Open the board on GitHub Pages instead of locally &nbsp; 2) Check your internet &nbsp; 3) Re-publish the sheet as CSV');
+  document.getElementById('tb').innerHTML = '<tr class="erow"><td colspan="17">&#9888; Could not load data. See status bar above for help.</td></tr>';
+  document.getElementById('rc').innerHTML = '0 results <span>– sheet unreachable</span>';
+}
+
+// ── CSV PARSER ────────────────────────────────────────────────
+function parseCSV(raw) {
+  const lines = raw.trim().split('\n');
+  if (lines.length < 2) return [];
+
+  const hdrs = splitLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g,''));
+
+  // flexible column name matching
+  const aliases = {
+    age:    ['age'],
+    pickup: ['pickup','pickupdate','date'],
+    truck:  ['truck','eq','equipment','trucktype','equiptype'],
+    dh:     ['dh','deadhead','deadheadmiles','dhdeadheadmiles'],
+    origin: ['origin','origincity','from'],
+    trip:   ['trip','tripmiles','miles','distance'],
+    dest:   ['dest','destination','destinationcity','to'],
+    company:['company','broker'],
+    contact:['contact','phone'],
+    len:    ['len','length','trailerlength'],
+    weight: ['weight','weightlbs'],
+    offer:  ['offer','rate','offerprice'],
+    cs:     ['cs','creditscore','credit'],
+    dtp:    ['dtp','daystopay','days'],
+    factor: ['factor','fp','fullpartial','fullorpartial'],
+  };
+
+  const idx = {};
+  for (const [k,list] of Object.entries(aliases)) {
+    idx[k] = -1;
+    for (const a of list) { const i=hdrs.indexOf(a); if(i>=0){idx[k]=i;break;} }
+  }
+
+  const g = (row, k) => idx[k]>=0 ? (row[idx[k]]||'').trim() : '';
+
+  return lines.slice(1).filter(l=>l.trim().length>1).map(line => {
+    const r = splitLine(line);
+    return {
+      age:     g(r,'age')    || '0m',
+      pickup:  g(r,'pickup') || '–',
+      truck:   g(r,'truck')  || '–',
+      dh:      g(r,'dh')     || '–',
+      origin:  g(r,'origin') || '–',
+      trip:    parseInt(g(r,'trip')) || 0,
+      dest:    g(r,'dest')   || '–',
+      company: g(r,'company')|| '–',
+      contact: g(r,'contact')|| '–',
+      len:     g(r,'len')    || '–',
+      weight:  g(r,'weight') || '–',
+      offer:   toNum(g(r,'offer')),
+      cs:      parseInt(g(r,'cs')) || null,
+      dtp:     g(r,'dtp')    || '–',
+      fp:      g(r,'factor') || '–',
+    };
+  });
+}
+
+function splitLine(line) {
+  const out=[]; let cur='', inQ=false;
+  for(const c of line){
+    if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){out.push(cur);cur='';}
+    else cur+=c;
+  }
+  out.push(cur); return out;
+}
+
+function toNum(s){ if(!s)return null; const n=parseFloat(s.replace(/[$,\s]/g,'')); return isNaN(n)?null:n; }
+
+// ── RENDER ────────────────────────────────────────────────────
+function renderTable() {
+  document.getElementById('rc').innerHTML =
+    `<strong>${filtered.length}</strong> Total results <span>from your Google Sheet</span>`;
+
+  if (!filtered.length) {
+    document.getElementById('tb').innerHTML =
+      '<tr class="erow"><td colspan="17">No loads match your filters — try adjusting the search above.</td></tr>';
+    return;
+  }
+
+  document.getElementById('tb').innerHTML = filtered.map((l,i) => {
+    const tc = l.trip>1000?'thi':l.trip>300?'tmid':'tlo';
+    const cc = l.cs>=90?'cshi':l.cs>=70?'csmid':'cslo';
+    const off = l.offer!=null ? `<span class="ohi">$${l.offer.toLocaleString()}</span>` : '<span class="mut">–</span>';
+    const fp  = l.fp!=='–' ? `<span class="fp-b${l.fp.toLowerCase().includes('partial')?' fp-p':''}">${l.fp}</span>` : '<span class="mut">–</span>';
+    const eq  = l.truck!=='–' ? `<span class="eq-b">${l.truck}</span>` : '<span class="mut">–</span>';
+    const cs  = l.cs ? `<span class="${cc}">${l.cs}</span>` : '<span class="mut">–</span>';
+    const co  = l.company.length>22 ? l.company.slice(0,22)+'…' : l.company;
+    const ct  = l.contact.length>16 ? l.contact.slice(0,16)+'…' : l.contact;
+    return `<tr id="r${i}" onclick="selRow(${i})">
+      <td><input type="checkbox" class="rc" data-i="${i}" onclick="event.stopPropagation()"></td>
+      <td class="mut">${l.age}</td>
+      <td>${l.pickup}</td>
+      <td class="city">${l.origin}</td>
+      <td><span class="dh-b">${l.dh}</span></td>
+      <td class="arr">→</td>
+      <td class="city">${l.dest}</td>
+      <td><span class="${tc}">${l.trip>0?l.trip:'–'}</span></td>
+      <td>${eq}</td>
+      <td class="mut">${l.len}</td>
+      <td>${l.weight}</td>
+      <td>${fp}</td>
+      <td>${off}</td>
+      <td>${cs}</td>
+      <td class="mut">${l.dtp}</td>
+      <td title="${l.company}" style="color:#0066cc;font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis">${co}</td>
+      <td title="${l.contact}" style="color:#0066cc;font-size:11px">${ct}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── SIDE PANEL ────────────────────────────────────────────────
+function selRow(i) {
+  if(selIdx>=0){const p=document.getElementById('r'+selIdx);if(p)p.classList.remove('sel');}
+  selIdx=i;
+  const el=document.getElementById('r'+i); if(el)el.classList.add('sel');
+  const l=filtered[i];
+  const cc=l.cs>=90?'cshi':l.cs>=70?'csmid':'cslo';
+  const stars=l.cs>=90?'★★★★★':l.cs>=70?'★★★☆☆':'★★☆☆☆';
+  document.getElementById('side').innerHTML=`
+    <div class="rbox">
+      <div class="rl"><span class="do"></span>${l.origin}</div>
+      <div style="margin:3px 0 3px 4px;color:#bbb;font-size:10px">│</div>
+      <div class="rl"><span class="dd"></span>${l.dest}</div>
+    </div>
+    <h3>${l.company}</h3>
+    <div class="sr"><span class="sl">Rating</span><span class="stars">${stars}</span></div>
+    <div class="sr"><span class="sl">Pickup Date</span><span class="sv">${l.pickup}</span></div>
+    <div class="sr"><span class="sl">Trip Miles</span><span class="sv" style="color:#0066cc">${l.trip>0?l.trip+' mi':'–'}</span></div>
+    <div class="sr"><span class="sl">Truck / EQ</span><span class="sv">${l.truck} ${l.len}</span></div>
+    <div class="sr"><span class="sl">Weight</span><span class="sv">${l.weight}</span></div>
+    <div class="sr"><span class="sl">Full / Partial</span><span class="sv">${l.fp}</span></div>
+    <div class="sr"><span class="sl">Dead Head</span><span class="sv">${l.dh}</span></div>
+    <div class="sr"><span class="sl">Offer</span><span class="sv" style="color:#006600">${l.offer!=null?'$'+l.offer.toLocaleString():'–'}</span></div>
+    <div class="sr"><span class="sl">Credit Score</span><span class="sv ${cc}">${l.cs||'–'}</span></div>
+    <div class="sr"><span class="sl">Days to Pay</span><span class="sv">${l.dtp}</span></div>
+    <div class="sr"><span class="sl">Contact</span><span class="sv" style="color:#0066cc">${l.contact}</span></div>
+    <button class="btn-cp" onclick="copyOne(${i})">&#128203; COPY THIS LOAD</button>`;
+}
+
+// ── COPY ─────────────────────────────────────────────────────
+function copyOne(i) {
+  const l=filtered[i];
+  const t=[
+    '====== LOAD DETAILS ======',
+    'Origin:       '+l.origin,
+    'Destination:  '+l.dest,
+    'Pickup:       '+l.pickup,
+    'Truck / EQ:   '+l.truck+' '+l.len,
+    'Weight:       '+l.weight,
+    'Full/Partial: '+l.fp,
+    'Dead Head:    '+l.dh,
+    'Trip Miles:   '+(l.trip||'–'),
+    'Offer:        '+(l.offer!=null?'$'+l.offer.toLocaleString():'–'),
+    'Company:      '+l.company,
+    'Contact:      '+l.contact,
+    'Credit Score: '+(l.cs||'–'),
+    'Days to Pay:  '+l.dtp,
+    '=========================='
+  ].join('\n');
+  navigator.clipboard.writeText(t).then(showToast);
+}
+
+function copySelected() {
+  const cks=[...document.querySelectorAll('.rc:checked')];
+  if(!cks.length){alert('Tick at least one row checkbox first.');return;}
+  const hdr='AGE\tPICKUP\tORIGIN\tDEST\tTRIP\tTRUCK\tWEIGHT\tF/P\tOFFER\tCS\tDTP\tCOMPANY\tCONTACT';
+  const rows=cks.map(c=>{const l=filtered[+c.dataset.i];
+    return[l.age,l.pickup,l.origin,l.dest,l.trip,l.truck,l.weight,l.fp,
+           l.offer!=null?l.offer:'–',l.cs||'–',l.dtp,l.company,l.contact].join('\t');});
+  navigator.clipboard.writeText([hdr,...rows].join('\n')).then(showToast);
+}
+
+function showToast(){
+  const t=document.getElementById('toast');
+  t.style.display='block';
+  setTimeout(()=>t.style.display='none',2200);
+}
+
+// ── FILTER ────────────────────────────────────────────────────
+function doFilter() {
+  const o=document.getElementById('fO').value.trim().toLowerCase();
+  const d=document.getElementById('fD').value.trim().toLowerCase();
+  const t=document.getElementById('fT').value.toLowerCase();
+  const f=document.getElementById('fFP').value.toLowerCase();
+  const m=parseFloat(document.getElementById('fMin').value)||0;
+  filtered=all.filter(l=>{
+    if(o&&!l.origin.toLowerCase().includes(o))return false;
+    if(d&&!l.dest.toLowerCase().includes(d))return false;
+    if(t&&!l.truck.toLowerCase().includes(t))return false;
+    if(f&&!l.fp.toLowerCase().includes(f))return false;
+    if(m&&(l.offer==null||l.offer<m))return false;
+    return true;
+  });
+  selIdx=-1;
+  renderTable();
+}
+
+function resetAll(){
+  ['fO','fD','fMin'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fT').value='';
+  document.getElementById('fFP').value='';
+  filtered=[...all]; selIdx=-1;
+  renderTable();
+  document.getElementById('side').innerHTML='<div class="side-empty">&#128203;<br><br>Click any load row<br>to see full details</div>';
+}
+
+// ── SORT ─────────────────────────────────────────────────────
+function srt(col){
+  if(sCol===col)sAsc=!sAsc;else{sCol=col;sAsc=true;}
+  filtered.sort((a,b)=>{
+    let va=a[col],vb=b[col];
+    if(va==null)va=sAsc?Infinity:-Infinity;
+    if(vb==null)vb=sAsc?Infinity:-Infinity;
+    if(typeof va==='number')return sAsc?va-vb:vb-va;
+    return sAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
+  });
+  renderTable();
+}
+
+function toggleAll(cb){document.querySelectorAll('.rc').forEach(c=>c.checked=cb.checked);}
+
+function setStatus(type,msg){
+  const d=document.getElementById('sd');
+  d.className='dot'+(type==='spin'?' spin':type==='err'?' err':'');
+  document.getElementById('sm').innerHTML=msg;
+}
+</script>
+</body>
+</html>
